@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>안녕! 친구야 👋</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root {
+  --sky:#4FC3F7; --skyD:#0288D1; --skyDark:#01579B;
+  --green:#66BB6A; --greenD:#388E3C;
+  --sun:#FFD54F; --sunD:#FFA000;
+  --coral:#FF7043; --mint:#4DB6AC;
+  --bg:#F0F9FF; --card:#fff;
+  --text:#1A237E; --text2:#546E7A;
+  --border:#B3E5FC; --r:16px;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+body{font-family:'Nunito',sans-serif;background:var(--bg);min-height:100vh;display:flex;justify-content:center;}
+.app{width:100%;max-width:420px;background:#fff;min-height:100vh;display:flex;flex-direction:column;box-shadow:0 0 40px rgba(0,0,0,.12);position:relative;}
+
+/* ── Header ── */
+.hdr{background:linear-gradient(135deg,#4FC3F7,#29B6F6);padding:16px 20px 12px;text-align:center;}
+.hdr h1{font-size:21px;font-weight:900;color:#fff;}
+.hdr p{font-size:11px;color:rgba(255,255,255,.85);margin-top:2px;font-weight:600;}
+
+/* ── Tabs ── */
+.tabs{display:flex;background:#E1F5FE;border-bottom:2px solid var(--border);}
+.tab-btn{flex:1;padding:12px 0;font-size:12px;font-weight:800;font-family:'Nunito',sans-serif;border:none;background:transparent;color:#90A4AE;cursor:pointer;transition:all .2s;display:flex;flex-direction:column;align-items:center;gap:3px;line-height:1;}
+.tab-btn .ti{font-size:18px;}
+.tab-btn.active{color:var(--skyD);background:#fff;border-bottom:3px solid var(--skyD);margin-bottom:-2px;}
+
+/* ── Main ── */
+.main{flex:1;overflow-y:auto;padding:16px 16px 80px;}
+
+/* ── Section label ── */
+.sec-label{font-size:13px;font-weight:900;color:var(--text);margin-bottom:8px;display:flex;align-items:center;gap:5px;}
+
+/* ════ TAB1 — Simulation ════ */
+.photo-zone{width:100%;height:200px;border-radius:20px;overflow:hidden;background:linear-gradient(135deg,#E3F2FD,#B3E5FC);border:3px dashed var(--sky);cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;margin-bottom:12px;position:relative;transition:border-color .2s;}
+.photo-zone img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:none;}
+.photo-zone .ph-ico{font-size:44px;margin-bottom:6px;}
+.photo-zone .ph-txt{font-size:13px;font-weight:700;color:var(--skyD);}
+
+.opt-row{display:flex;gap:8px;margin-bottom:14px;}
+.opt-btn{flex:1;padding:9px;border-radius:12px;border:2px solid var(--border);background:#F8FBFF;font-size:12px;font-weight:800;font-family:'Nunito',sans-serif;color:var(--skyD);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;transition:all .15s;}
+.opt-btn:hover{background:#E1F5FE;border-color:var(--sky);}
+
+/* TTS / 녹음 토글 */
+.reply-mode-card{background:#F8FBFF;border:2px solid var(--border);border-radius:14px;padding:12px 14px;margin-bottom:14px;}
+.reply-mode-title{font-size:11px;font-weight:800;color:var(--text2);margin-bottom:8px;}
+.reply-mode-row{display:flex;gap:8px;}
+.mode-btn{flex:1;padding:8px 6px;border-radius:10px;border:2px solid var(--border);background:#fff;font-size:12px;font-weight:800;font-family:'Nunito',sans-serif;color:var(--text2);cursor:pointer;transition:all .2s;text-align:center;}
+.mode-btn.active{border-color:var(--skyD);background:#E3F2FD;color:var(--skyD);}
+
+/* 녹음 패널 */
+.rec-panel{background:#FFF8E1;border:2px solid #FFD54F;border-radius:14px;padding:12px 14px;margin-bottom:14px;display:none;}
+.rec-panel.show{display:block;}
+.rec-status{font-size:12px;font-weight:700;color:#E65100;margin-bottom:8px;text-align:center;}
+.rec-btn-row{display:flex;gap:8px;}
+.rec-btn{flex:1;padding:9px;border-radius:10px;border:none;font-size:12px;font-weight:800;font-family:'Nunito',sans-serif;cursor:pointer;transition:all .15s;}
+.rec-start{background:linear-gradient(135deg,#FF7043,#E53935);color:#fff;box-shadow:0 3px 0 #B71C1C;}
+.rec-start:active{transform:translateY(2px);box-shadow:0 1px 0 #B71C1C;}
+.rec-stop{background:linear-gradient(135deg,#78909C,#546E7A);color:#fff;box-shadow:0 3px 0 #37474F;}
+.rec-stop:disabled{opacity:.4;cursor:default;}
+.rec-play{background:linear-gradient(135deg,#66BB6A,#43A047);color:#fff;box-shadow:0 3px 0 #2E7D32;}
+.rec-play:disabled{opacity:.4;cursor:default;}
+
+/* 상태 박스 */
+.status-box{background:#E8F5E9;border:2px solid #A5D6A7;border-radius:14px;padding:11px 14px;text-align:center;margin-bottom:12px;min-height:52px;display:flex;align-items:center;justify-content:center;}
+.status-box p{font-size:13px;font-weight:700;color:#2E7D32;line-height:1.5;}
+
+/* 말풍선 */
+.bubble-wrap{display:none;margin-bottom:14px;animation:bpop .4s cubic-bezier(.175,.885,.32,1.275);}
+.bubble-wrap.show{display:flex;}
+@keyframes bpop{from{opacity:0;transform:scale(.6) translateY(8px);}to{opacity:1;transform:scale(1) translateY(0);}}
+.bubble{background:linear-gradient(135deg,#FFF9C4,#FFF176);border:3px solid #FFD54F;border-radius:20px 20px 20px 4px;padding:12px 16px;position:relative;}
+.bubble::before{content:'';position:absolute;bottom:-11px;left:16px;border:6px solid transparent;border-top-color:#FFD54F;}
+.bubble p{font-size:17px;font-weight:900;color:#E65100;}
+.bubble .bf{font-size:26px;margin-bottom:3px;}
+
+/* 마이크 버튼 */
+.mic-btn{width:100%;padding:17px;border-radius:18px;border:none;font-size:16px;font-weight:900;font-family:'Nunito',sans-serif;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:9px;box-shadow:0 5px 0 rgba(0,0,0,.12);}
+.mic-btn:disabled{background:#E0E0E0;color:#9E9E9E;box-shadow:0 4px 0 #BDBDBD;cursor:not-allowed;}
+.mic-btn.ready{background:linear-gradient(135deg,#42A5F5,#1E88E5);color:#fff;box-shadow:0 5px 0 #1565C0;}
+.mic-btn.ready:active{transform:translateY(4px);box-shadow:0 1px 0 #1565C0;}
+.mic-btn.listening{background:linear-gradient(135deg,#FFA726,#FB8C00);color:#fff;box-shadow:0 5px 0 #E65100;animation:pulse 1s ease-in-out infinite;}
+.mic-btn.success{background:linear-gradient(135deg,#66BB6A,#43A047);color:#fff;box-shadow:0 5px 0 #2E7D32;}
+@keyframes pulse{0%,100%{transform:scale(1);}50%{transform:scale(1.03);}}
+
+/* ════ TAB2 — Tracker ════ */
+.add-form{background:linear-gradient(135deg,#E3F2FD,#E8EAF6);border:2px solid var(--border);border-radius:14px;padding:13px;margin-bottom:18px;}
+.add-row{display:flex;gap:8px;align-items:center;margin-bottom:9px;}
+.add-photo-wrap{display:flex;gap:6px;}
+.ap-btn{width:48px;height:48px;border-radius:11px;border:2px solid var(--border);background:#fff;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;transition:border-color .15s;flex-shrink:0;}
+.ap-btn:hover{border-color:var(--sky);}
+.ap-btn img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:none;}
+.add-name{flex:1;padding:11px 13px;border:2px solid var(--border);border-radius:11px;font-size:14px;font-family:'Nunito',sans-serif;font-weight:700;color:var(--text);outline:none;background:#fff;}
+.add-name:focus{border-color:var(--sky);}
+
+/* 친구 카드 */
+.friend-list{display:flex;flex-direction:column;gap:12px;}
+.empty-msg{text-align:center;padding:28px 16px;color:#90A4AE;}
+.empty-msg .ei{font-size:44px;margin-bottom:8px;}
+.empty-msg p{font-size:13px;font-weight:700;}
+
+.fcard{background:#fff;border:2.5px solid #E3F2FD;border-radius:18px;padding:13px 14px;box-shadow:0 3px 10px rgba(0,0,0,.06);transition:border-color .3s,background .3s;}
+.fcard.done{border-color:#A5D6A7;background:#F1FFF3;}
+
+.fcard-top{display:flex;align-items:center;gap:11px;}
+.fcard-photo{width:52px;height:52px;border-radius:50%;object-fit:cover;border:3px solid #B3E5FC;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:22px;background:linear-gradient(135deg,#B3E5FC,#81D4FA);}
+.fcard-photo img{width:100%;height:100%;object-fit:cover;border-radius:50%;}
+.fcard-info{flex:1;}
+.fcard-name{font-size:15px;font-weight:900;color:var(--text);}
+.fcard-sub{font-size:11px;font-weight:600;color:var(--text2);margin-top:2px;}
+
+.check-btn{padding:9px 16px;border:none;border-radius:12px;background:linear-gradient(135deg,#66BB6A,#43A047);color:#fff;font-size:13px;font-weight:900;font-family:'Nunito',sans-serif;cursor:pointer;box-shadow:0 4px 0 #2E7D32;transition:all .15s;white-space:nowrap;}
+.check-btn:active{transform:translateY(3px);box-shadow:0 1px 0 #2E7D32;}
+.check-btn.done-btn{background:linear-gradient(135deg,#B0BEC5,#90A4AE);box-shadow:0 4px 0 #607D8B;cursor:default;}
+
+/* 완수 체크 표시 */
+.done-badge{display:none;font-size:28px;margin-left:4px;}
+.fcard.done .done-badge{display:inline;}
+
+/* 별 */
+.star-row{display:flex;justify-content:center;margin-top:10px;}
+.star-ico{font-size:36px;transition:all .4s cubic-bezier(.175,.885,.32,1.275);transform:scale(.7);opacity:.3;filter:grayscale(1);}
+.star-ico.lit{transform:scale(1.15);opacity:1;filter:none;animation:starPop .5s cubic-bezier(.175,.885,.32,1.275);}
+@keyframes starPop{0%{transform:scale(.4);}60%{transform:scale(1.3);}100%{transform:scale(1.15);}}
+
+/* ── 미니 팝업 ── */
+.mini-pop{position:fixed;top:80px;left:50%;transform:translateX(-50%) scale(0);background:#fff;border:3px solid #A5D6A7;border-radius:20px;padding:14px 22px;text-align:center;z-index:200;box-shadow:0 12px 40px rgba(0,0,0,.2);transition:transform .3s cubic-bezier(.175,.885,.32,1.275),opacity .3s;opacity:0;pointer-events:none;white-space:nowrap;}
+.mini-pop.show{transform:translateX(-50%) scale(1);opacity:1;}
+.mini-pop .mp-ico{font-size:32px;margin-bottom:4px;}
+.mini-pop p{font-size:14px;font-weight:900;color:#2E7D32;}
+
+/* ── 큰 축하 오버레이 ── */
+#big-cheer{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:300;align-items:center;justify-content:center;padding:24px;}
+#big-cheer.show{display:flex;}
+.cheer-box{background:#fff;border-radius:26px;padding:32px 24px;text-align:center;max-width:300px;width:100%;box-shadow:0 24px 60px rgba(0,0,0,.3);animation:bpop .4s cubic-bezier(.175,.885,.32,1.275);}
+.cheer-box .cf{font-size:60px;margin-bottom:8px;}
+.cheer-box h2{font-size:21px;font-weight:900;color:var(--text);margin-bottom:6px;}
+.cheer-box p{font-size:13px;color:var(--text2);font-weight:700;margin-bottom:18px;line-height:1.6;}
+.cheer-close{padding:11px 26px;background:linear-gradient(135deg,var(--sky),var(--skyD));color:#fff;border:none;border-radius:12px;font-size:14px;font-weight:900;font-family:'Nunito',sans-serif;cursor:pointer;}
+
+/* ── 컨페티 ── */
+.confetti-wrap{position:fixed;inset:0;pointer-events:none;z-index:250;overflow:hidden;display:none;}
+.confetti-wrap.show{display:block;}
+.cbit{position:absolute;animation:fall linear forwards;}
+@keyframes fall{from{transform:translateY(-20px) rotate(0deg);opacity:1;}to{transform:translateY(110vh) rotate(720deg);opacity:0;}}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- Header -->
+  <div class="hdr">
+    <h1>👋 안녕! 친구야</h1>
+    <p>인사 연습 앱</p>
+  </div>
+
+  <!-- Tabs -->
+  <div class="tabs">
+    <button class="tab-btn active" id="tb-sim" onclick="switchTab('sim')">
+      <span class="ti">🎯</span>인사 연습
+    </button>
+    <button class="tab-btn" id="tb-track" onclick="switchTab('track')">
+      <span class="ti">📅</span>오늘의 기록
+    </button>
+  </div>
+
+  <!-- Main -->
+  <div class="main">
+
+    <!-- ══ TAB1 ══ -->
+    <div id="tab-sim">
+      <!-- 친구 사진 -->
+      <label class="photo-zone" id="photo-zone">
+        <input type="file" accept="image/*" id="sim-file" style="display:none" onchange="loadSimPhoto(event)">
+        <img id="sim-img" src="" alt="">
+        <div id="ph-placeholder">
+          <div class="ph-ico">📸</div>
+          <div class="ph-txt">친구 사진을 등록해요!</div>
+        </div>
+      </label>
+      <input type="file" accept="image/*" capture="user" id="sim-cam" style="display:none" onchange="loadSimPhoto(event)">
+
+      <div class="opt-row">
+        <button class="opt-btn" onclick="document.getElementById('sim-file').click()">🖼️ 앨범</button>
+        <button class="opt-btn" onclick="document.getElementById('sim-cam').click()">📷 카메라</button>
+      </div>
+
+      <!-- 대답 방식 선택 -->
+      <div class="reply-mode-card">
+        <div class="reply-mode-title">🔊 친구 대답 방식 선택</div>
+        <div class="reply-mode-row">
+          <button class="mode-btn active" id="mode-tts" onclick="setMode('tts')">🤖 자동 목소리</button>
+          <button class="mode-btn" id="mode-rec" onclick="setMode('rec')">🎙️ 직접 녹음</button>
+        </div>
+      </div>
+
+      <!-- 녹음 패널 -->
+      <div class="rec-panel" id="rec-panel">
+        <div class="rec-status" id="rec-status">🎙️ 선생님이 친구 대답을 녹음해주세요!</div>
+        <div class="rec-btn-row">
+          <button class="rec-btn rec-start" id="rec-start-btn" onclick="startRec()">⏺ 녹음 시작</button>
+          <button class="rec-btn rec-stop" id="rec-stop-btn" onclick="stopRec()" disabled>⏹ 중지</button>
+          <button class="rec-btn rec-play" id="rec-play-btn" onclick="playRec()" disabled>▶ 미리 듣기</button>
+        </div>
+      </div>
+
+      <!-- 상태 -->
+      <div class="status-box"><p id="sim-status">사진을 등록하면 인사 연습을 시작할 수 있어요! 😊</p></div>
+
+      <!-- 말풍선 -->
+      <div class="bubble-wrap" id="bubble-wrap">
+        <div class="bubble">
+          <div class="bf">😄</div>
+          <p>안녕! 반가워~ 🌟</p>
+        </div>
+      </div>
+
+      <!-- 마이크 -->
+      <button class="mic-btn" id="mic-btn" disabled onclick="startListening()">🎤 여기 눌러서 인사해봐요!</button>
+    </div>
+
+    <!-- ══ TAB2 ══ -->
+    <div id="tab-track" style="display:none">
+
+      <!-- 친구 추가 -->
+      <div class="sec-label">✨ 오늘 인사할 친구 추가</div>
+      <div class="add-form">
+        <div class="add-row">
+          <div class="add-photo-wrap">
+            <label class="ap-btn" title="앨범">
+              <input type="file" accept="image/*" id="add-album" style="display:none" onchange="loadAddPhoto(event)">
+              <img id="add-img" src="" alt="">
+              <span id="add-icon">📷</span>
+            </label>
+            <label class="ap-btn" title="카메라">
+              <input type="file" accept="image/*" capture="user" id="add-cam" style="display:none" onchange="loadAddPhoto(event)">
+              📸
+            </label>
+          </div>
+          <input type="text" id="add-name" class="add-name" placeholder="친구 이름 ✏️" onkeydown="if(event.key==='Enter')addFriend()">
+        </div>
+        <button onclick="addFriend()" style="width:100%;padding:10px;background:linear-gradient(135deg,#4FC3F7,#0288D1);color:#fff;border:none;border-radius:11px;font-size:13px;font-weight:900;font-family:'Nunito',sans-serif;cursor:pointer;box-shadow:0 3px 0 #01579B;">➕ 친구 추가하기!</button>
+      </div>
+
+      <div class="sec-label">🌟 오늘의 인사 목록</div>
+      <div class="friend-list" id="friend-list">
+        <div class="empty-msg">
+          <div class="ei">🌈</div>
+          <p>위에서 오늘 인사할 친구를<br>추가해봐요!</p>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /main -->
+</div><!-- /app -->
+
+<!-- 미니 팝업 -->
+<div class="mini-pop" id="mini-pop">
+  <div class="mp-ico" id="mini-ico">🎉</div>
+  <p id="mini-msg">잘했어요!</p>
+</div>
+
+<!-- 큰 축하 -->
+<div id="big-cheer">
+  <div class="cheer-box">
+    <div class="cf">🏆</div>
+    <h2 id="bc-title">모두 완료!</h2>
+    <p id="bc-msg">오늘 만나기로 한 친구들에게<br>모두 인사했어요! 정말 대단해요! 🎊</p>
+    <button class="cheer-close" onclick="closeCheer()">와! 너무 좋아요 😊</button>
+  </div>
+</div>
+
+<!-- 컨페티 -->
+<div class="confetti-wrap" id="confetti"></div>
+
+<script>
+// ── 상태 ──
+let simPhotoSet = false;
+let replyMode = 'tts';          // 'tts' | 'rec'
+let mediaRecorder = null;
+let recordedChunks = [];
+let recordedBlob = null;
+let recordedUrl = null;
+let recAudio = null;
+let isRecording = false;
+let addPhotoData = '';
+let friends = [];
+let miniTimer = null;
+
+// ── 탭 전환 ──
+function switchTab(t) {
+  document.getElementById('tab-sim').style.display   = t==='sim'   ? 'block' : 'none';
+  document.getElementById('tab-track').style.display = t==='track' ? 'block' : 'none';
+  document.getElementById('tb-sim').className   = 'tab-btn'+(t==='sim'?' active':'');
+  document.getElementById('tb-track').className = 'tab-btn'+(t==='track'?' active':'');
+}
+
+// ── TAB1: 사진 ──
+function loadSimPhoto(e) {
+  const file = e.target.files[0]; if(!file) return;
+  const r = new FileReader();
+  r.onload = ev => {
+    const img = document.getElementById('sim-img');
+    img.src = ev.target.result; img.style.display = 'block';
+    document.getElementById('ph-placeholder').style.display = 'none';
+    simPhotoSet = true;
+    const btn = document.getElementById('mic-btn');
+    btn.disabled = false; btn.className = 'mic-btn ready';
+    btn.textContent = '🎤 여기 눌러서 "안녕!" 해봐요!';
+    setStatus('친구가 나타났어요! 버튼을 누르고 크게 "안녕!" 해봐요 🎤','green');
+  };
+  r.readAsDataURL(file);
+}
+
+// ── 대답 모드 전환 ──
+function setMode(m) {
+  replyMode = m;
+  document.getElementById('mode-tts').className = 'mode-btn'+(m==='tts'?' active':'');
+  document.getElementById('mode-rec').className = 'mode-btn'+(m==='rec'?' active':'');
+  const panel = document.getElementById('rec-panel');
+  panel.classList.toggle('show', m==='rec');
+}
+
+// ── 녹음 ──
+async function startRec() {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({audio:true});
+    recordedChunks = [];
+    mediaRecorder = new MediaRecorder(stream);
+    mediaRecorder.ondataavailable = e => { if(e.data.size>0) recordedChunks.push(e.data); };
+    mediaRecorder.onstop = () => {
+      recordedBlob = new Blob(recordedChunks, {type:'audio/webm'});
+      if(recordedUrl) URL.revokeObjectURL(recordedUrl);
+      recordedUrl = URL.createObjectURL(recordedBlob);
+      recAudio = new Audio(recordedUrl);
+      document.getElementById('rec-play-btn').disabled = false;
+      document.getElementById('rec-status').textContent = '✅ 녹음 완료! 미리 듣기로 확인해보세요.';
+    };
+    mediaRecorder.start();
+    isRecording = true;
+    document.getElementById('rec-status').textContent = '🔴 녹음 중... 친구 대답을 말해주세요!';
+    document.getElementById('rec-start-btn').disabled = true;
+    document.getElementById('rec-stop-btn').disabled  = false;
+  } catch(err) {
+    document.getElementById('rec-status').textContent = '❌ 마이크 권한이 필요해요.';
+  }
+}
+function stopRec() {
+  if(mediaRecorder && isRecording) {
+    mediaRecorder.stop();
+    mediaRecorder.stream.getTracks().forEach(t=>t.stop());
+    isRecording = false;
+    document.getElementById('rec-start-btn').disabled = false;
+    document.getElementById('rec-stop-btn').disabled  = true;
+  }
+}
+function playRec() {
+  if(recAudio) { recAudio.currentTime=0; recAudio.play(); }
+}
+
+// ── TAB1: 음성 인식 ──
+function startListening() {
+  if(!simPhotoSet) return;
+  const SR = window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!SR){ alert('크롬 브라우저를 사용해 주세요.'); return; }
+  hideBubble();
+  const btn = document.getElementById('mic-btn');
+  btn.className='mic-btn listening'; btn.textContent='🎤 듣고 있어요… "안녕!" 크게!';
+  setStatus('잘 듣고 있어요! 크게 "안녕!" 하고 말해봐요 😊','blue');
+  const rec = new SR();
+  rec.lang='ko-KR'; rec.interimResults=false; rec.maxAlternatives=3;
+  rec.start();
+  rec.onresult = ev => {
+    const texts = Array.from(ev.results[0]).map(r=>r.transcript.trim());
+    const ok = texts.some(t=>t.includes('안녕')||t.includes('아녕')||t.includes('하이'));
+    if(ok) onSuccess(); else { setStatus('다시 한 번! "안녕!" 하고 말해봐요 🌟','orange'); resetMicBtn(); }
+  };
+  rec.onerror = ()=>{ setStatus('다시 눌러서 말해봐요! 🎤','orange'); resetMicBtn(); };
+}
+function onSuccess() {
+  const btn = document.getElementById('mic-btn');
+  btn.className='mic-btn success'; btn.textContent='🎉 잘했어요!!';
+  setStatus('완벽해요! 친구가 대답하고 있어요! 👏','green');
+  showBubble();
+  // 대답 재생
+  if(replyMode==='rec' && recAudio) {
+    recAudio.currentTime=0; recAudio.play();
+  } else {
+    speakTTS();
+  }
+  setTimeout(resetMicBtn, 4500);
+}
+function resetMicBtn() {
+  const btn = document.getElementById('mic-btn');
+  btn.disabled=!simPhotoSet; btn.className=simPhotoSet?'mic-btn ready':'mic-btn';
+  btn.textContent='🎤 여기 눌러서 "안녕!" 해봐요!';
+}
+function showBubble(){ document.getElementById('bubble-wrap').classList.add('show'); }
+function hideBubble(){ document.getElementById('bubble-wrap').classList.remove('show'); }
+
+function speakTTS() {
+  if(!('speechSynthesis' in window)) return;
+  window.speechSynthesis.cancel();
+  const phrases=['안녕! 반가워~','안녕! 오늘도 만나서 기쁘다!','안녕! 우리 같이 놀자~'];
+  const u = new SpeechSynthesisUtterance(phrases[Math.floor(Math.random()*phrases.length)]);
+  u.lang='ko-KR'; u.rate=1.15; u.pitch=1.6; u.volume=1;
+  const speak=vs=>{ const v=vs.find(v=>v.lang.startsWith('ko')&&(v.name.includes('유나')||v.name.includes('Yuna')||v.name.includes('여')))||vs.find(v=>v.lang.startsWith('ko')); if(v)u.voice=v; window.speechSynthesis.speak(u); };
+  const vs=window.speechSynthesis.getVoices();
+  if(vs.length) speak(vs); else window.speechSynthesis.onvoiceschanged=()=>speak(window.speechSynthesis.getVoices());
+}
+
+function setStatus(msg, color) {
+  const box=document.querySelector('.status-box'), p=document.getElementById('sim-status');
+  p.textContent=msg;
+  const m={green:['#E8F5E9','#A5D6A7','#2E7D32'],blue:['#E3F2FD','#90CAF9','#1565C0'],orange:['#FFF3E0','#FFCC80','#E65100']};
+  const [bg,br,tc]=m[color]||m.green;
+  box.style.background=bg; box.style.borderColor=br; p.style.color=tc;
+}
+
+// ── TAB2: 친구 사진 ──
+function loadAddPhoto(e) {
+  const file=e.target.files[0]; if(!file) return;
+  const r=new FileReader();
+  r.onload=ev=>{
+    addPhotoData=ev.target.result;
+    const img=document.getElementById('add-img'), icon=document.getElementById('add-icon');
+    img.src=addPhotoData; img.style.display='block'; icon.style.display='none';
+  };
+  r.readAsDataURL(file);
+}
+
+// ── TAB2: 친구 추가 ──
+function addFriend() {
+  const nameEl=document.getElementById('add-name'), name=nameEl.value.trim();
+  if(!name){ nameEl.focus(); return; }
+  friends.push({id:Date.now(), name, photo:addPhotoData, done:false});
+  renderFriends();
+  nameEl.value=''; addPhotoData='';
+  const img=document.getElementById('add-img'), icon=document.getElementById('add-icon');
+  img.style.display='none'; img.src=''; icon.style.display='inline';
+  document.getElementById('add-album').value='';
+  document.getElementById('add-cam').value='';
+}
+
+// ── TAB2: 렌더 ──
+function renderFriends() {
+  const list=document.getElementById('friend-list');
+  if(!friends.length){
+    list.innerHTML='<div class="empty-msg"><div class="ei">🌈</div><p>위에서 오늘 인사할 친구를<br>추가해봐요!</p></div>';
+    return;
+  }
+  list.innerHTML=friends.map((f,i)=>{
+    const photoEl = f.photo
+      ? `<div class="fcard-photo"><img src="${f.photo}" alt="${f.name}"></div>`
+      : `<div class="fcard-photo">😊</div>`;
+    return `
+    <div class="fcard${f.done?' done':''}" id="fc-${f.id}">
+      <div class="fcard-top">
+        ${photoEl}
+        <div class="fcard-info">
+          <div class="fcard-name">${f.name} <span class="done-badge">✅</span></div>
+          <div class="fcard-sub">${f.done?'오늘 인사 완료! 🎉':'아직 인사 안 했어요'}</div>
+        </div>
+        <button class="check-btn${f.done?' done-btn':''}"
+          onclick="${f.done?'':('markDone('+i+')')}"
+          ${f.done?'disabled':''}>
+          ${f.done?'완료 ✅':'✅ 인사했어요!'}
+        </button>
+      </div>
+      <div class="star-row">
+        <div class="star-ico${f.done?' lit':''}" id="star-${f.id}">⭐</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── TAB2: 완수 체크 ──
+function markDone(idx) {
+  friends[idx].done = true;
+  renderFriends();
+  // 별 애니메이션 재적용
+  setTimeout(()=>{
+    const s=document.getElementById('star-'+friends[idx].id);
+    if(s){ s.classList.remove('lit'); void s.offsetWidth; s.classList.add('lit'); }
+  }, 50);
+  // 미니 팝업
+  showMiniPop('🎉', `${friends[idx].name}에게 인사 성공! 👏`);
+  // 전원 완수 체크
+  if(friends.length>0 && friends.every(f=>f.done)){
+    setTimeout(showBigCheer, 900);
+  }
+}
+
+// ── 미니 팝업 ──
+function showMiniPop(ico, msg) {
+  const pop=document.getElementById('mini-pop');
+  document.getElementById('mini-ico').textContent=ico;
+  document.getElementById('mini-msg').textContent=msg;
+  pop.classList.add('show');
+  if(miniTimer) clearTimeout(miniTimer);
+  miniTimer=setTimeout(()=>pop.classList.remove('show'), 2200);
+}
+
+// ── 큰 축하 ──
+function showBigCheer() {
+  const n=friends.length;
+  document.getElementById('bc-title').textContent=`${n}명 모두 완료! 🎊`;
+  document.getElementById('bc-msg').textContent=`오늘 만나기로 한 친구 ${n}명에게\n모두 인사했어요! 정말 대단해요! 🏆`;
+  document.getElementById('big-cheer').classList.add('show');
+  launchConfetti();
+}
+function closeCheer(){
+  document.getElementById('big-cheer').classList.remove('show');
+  stopConfetti();
+}
+
+// ── 컨페티 ──
+const CC=['#FF6B6B','#FFD93D','#6BCB77','#4FC3F7','#A78BFA','#FB923C'];
+let confTimer;
+function launchConfetti(){
+  const w=document.getElementById('confetti'); w.innerHTML=''; w.classList.add('show');
+  for(let i=0;i<70;i++){
+    const b=document.createElement('div'); b.className='cbit';
+    b.style.cssText=`left:${Math.random()*100}%;background:${CC[Math.floor(Math.random()*CC.length)]};width:${6+Math.random()*8}px;height:${6+Math.random()*8}px;animation-duration:${1.5+Math.random()*2}s;animation-delay:${Math.random()*.8}s;border-radius:${Math.random()>.5?'50%':'2px'};`;
+    w.appendChild(b);
+  }
+  clearTimeout(confTimer); confTimer=setTimeout(stopConfetti,3500);
+}
+function stopConfetti(){
+  const w=document.getElementById('confetti'); w.classList.remove('show'); w.innerHTML='';
+}
+</script>
+</body>
+</html>
