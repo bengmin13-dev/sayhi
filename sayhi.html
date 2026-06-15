@@ -46,26 +46,6 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);min-height:100vh;displ
 .opt-btn{flex:1;padding:9px;border-radius:12px;border:2px solid var(--border);background:#F8FBFF;font-size:12px;font-weight:800;font-family:'Nunito',sans-serif;color:var(--skyD);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;transition:all .15s;}
 .opt-btn:hover{background:#E1F5FE;border-color:var(--sky);}
 
-/* TTS / 녹음 토글 */
-.reply-mode-card{background:#F8FBFF;border:2px solid var(--border);border-radius:14px;padding:12px 14px;margin-bottom:14px;}
-.reply-mode-title{font-size:11px;font-weight:800;color:var(--text2);margin-bottom:8px;}
-.reply-mode-row{display:flex;gap:8px;}
-.mode-btn{flex:1;padding:8px 6px;border-radius:10px;border:2px solid var(--border);background:#fff;font-size:12px;font-weight:800;font-family:'Nunito',sans-serif;color:var(--text2);cursor:pointer;transition:all .2s;text-align:center;}
-.mode-btn.active{border-color:var(--skyD);background:#E3F2FD;color:var(--skyD);}
-
-/* 녹음 패널 */
-.rec-panel{background:#FFF8E1;border:2px solid #FFD54F;border-radius:14px;padding:12px 14px;margin-bottom:14px;display:none;}
-.rec-panel.show{display:block;}
-.rec-status{font-size:12px;font-weight:700;color:#E65100;margin-bottom:8px;text-align:center;}
-.rec-btn-row{display:flex;gap:8px;}
-.rec-btn{flex:1;padding:9px;border-radius:10px;border:none;font-size:12px;font-weight:800;font-family:'Nunito',sans-serif;cursor:pointer;transition:all .15s;}
-.rec-start{background:linear-gradient(135deg,#FF7043,#E53935);color:#fff;box-shadow:0 3px 0 #B71C1C;}
-.rec-start:active{transform:translateY(2px);box-shadow:0 1px 0 #B71C1C;}
-.rec-stop{background:linear-gradient(135deg,#78909C,#546E7A);color:#fff;box-shadow:0 3px 0 #37474F;}
-.rec-stop:disabled{opacity:.4;cursor:default;}
-.rec-play{background:linear-gradient(135deg,#66BB6A,#43A047);color:#fff;box-shadow:0 3px 0 #2E7D32;}
-.rec-play:disabled{opacity:.4;cursor:default;}
-
 /* 상태 박스 */
 .status-box{background:#E8F5E9;border:2px solid #A5D6A7;border-radius:14px;padding:11px 14px;text-align:center;margin-bottom:12px;min-height:52px;display:flex;align-items:center;justify-content:center;}
 .status-box p{font-size:13px;font-weight:700;color:#2E7D32;line-height:1.5;}
@@ -190,25 +170,6 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);min-height:100vh;displ
         <button class="opt-btn" onclick="document.getElementById('sim-cam').click()">📷 카메라</button>
       </div>
 
-      <!-- 대답 방식 선택 -->
-      <div class="reply-mode-card">
-        <div class="reply-mode-title">🔊 친구 대답 방식 선택</div>
-        <div class="reply-mode-row">
-          <button class="mode-btn active" id="mode-tts" onclick="setMode('tts')">🤖 자동 목소리</button>
-          <button class="mode-btn" id="mode-rec" onclick="setMode('rec')">🎙️ 직접 녹음</button>
-        </div>
-      </div>
-
-      <!-- 녹음 패널 -->
-      <div class="rec-panel" id="rec-panel">
-        <div class="rec-status" id="rec-status">🎙️ 선생님이 친구 대답을 녹음해주세요!</div>
-        <div class="rec-btn-row">
-          <button class="rec-btn rec-start" id="rec-start-btn" onclick="startRec()">⏺ 녹음 시작</button>
-          <button class="rec-btn rec-stop" id="rec-stop-btn" onclick="stopRec()" disabled>⏹ 중지</button>
-          <button class="rec-btn rec-play" id="rec-play-btn" onclick="playRec()" disabled>▶ 미리 듣기</button>
-        </div>
-      </div>
-
       <!-- 상태 -->
       <div class="status-box"><p id="sim-status">사진을 등록하면 인사 연습을 시작할 수 있어요! 😊</p></div>
 
@@ -281,14 +242,6 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);min-height:100vh;displ
 <script>
 // ── 상태 ──
 let simPhotoSet = false;
-let replyMode = 'tts';
-let mediaRecorder = null;
-let micStream = null;
-let recordedChunks = [];
-let recordedBlob = null;
-let recordedUrl = null;
-let recAudio = null;
-let isRecording = false;
 let addPhotoData = '';
 let friends = [];
 let miniTimer = null;
@@ -319,141 +272,17 @@ function loadSimPhoto(e) {
 }
 
 // ── 대답 모드 전환 ──
-function setMode(m) {
-  replyMode = m;
-  document.getElementById('mode-tts').className = 'mode-btn'+(m==='tts'?' active':'');
-  document.getElementById('mode-rec').className = 'mode-btn'+(m==='rec'?' active':'');
-  const panel = document.getElementById('rec-panel');
-  panel.classList.toggle('show', m==='rec');
-}
 
 // ── 녹음 ──
-// ── 녹음: AudioContext + ScriptProcessor (카카오/iOS Safari 호환) ──
-let audioCtx = null;
-let scriptProcessor = null;
-let pcmBuffers = [];
-let recSampleRate = 44100;
 
-async function startRec() {
-  // 기존 스트림/컨텍스트 정리
-  await cleanupAudio();
-  setRecStatus('요청 중…');
-  try {
-    micStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
-  } catch(err) {
-    setRecStatus('❌ 마이크 권한이 필요해요. 설정에서 허용해주세요.');
-    return;
-  }
-
-  audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-  recSampleRate = audioCtx.sampleRate;
-  pcmBuffers = [];
-
-  const source = audioCtx.createMediaStreamSource(micStream);
-  scriptProcessor = audioCtx.createScriptProcessor(4096, 1, 1);
-  scriptProcessor.onaudioprocess = e => {
-    if (!isRecording) return;
-    // Float32 PCM 복사
-    const buf = e.inputBuffer.getChannelData(0);
-    pcmBuffers.push(new Float32Array(buf));
-  };
-  source.connect(scriptProcessor);
-  scriptProcessor.connect(audioCtx.destination);
-
-  isRecording = true;
-  setRecStatus('🔴 녹음 중… 친구 대답을 말해주세요!');
-  document.getElementById('rec-start-btn').disabled = true;
-  document.getElementById('rec-stop-btn').disabled  = false;
-}
-
-function stopRec() {
-  if (!isRecording) return;
-  isRecording = false;
-
-  // 녹음 데이터 WAV 변환
-  const wav = pcmToWav(pcmBuffers, recSampleRate);
-  if (recordedUrl) URL.revokeObjectURL(recordedUrl);
-  recordedUrl = URL.createObjectURL(wav);
-  recAudio = new Audio(recordedUrl);
-
-  cleanupAudio();
-
-  document.getElementById('rec-start-btn').disabled = false;
-  document.getElementById('rec-stop-btn').disabled  = true;
-  document.getElementById('rec-play-btn').disabled  = false;
-  setRecStatus('✅ 녹음 완료! 미리 듣기로 확인해보세요.');
-}
-
-async function cleanupAudio() {
-  if (scriptProcessor) { scriptProcessor.disconnect(); scriptProcessor = null; }
-  if (audioCtx)        { try { await audioCtx.close(); } catch(e){} audioCtx = null; }
-  if (micStream)       { micStream.getTracks().forEach(t => t.stop()); micStream = null; }
-}
-
-function playRec() {
-  if (!recAudio) { setRecStatus('❌ 먼저 녹음해주세요!'); return; }
-  recAudio.currentTime = 0;
-  const p = recAudio.play();
-  if (p && p.catch) p.catch(() => setRecStatus('❌ 재생 실패. 다시 녹음해보세요.'));
-}
-
-function setRecStatus(msg) {
-  const el = document.getElementById('rec-status');
-  if (el) el.textContent = msg;
-}
-
-// ── Float32 PCM → WAV Blob 변환 ──
-function pcmToWav(buffers, sampleRate) {
-  // 전체 샘플 합치기
-  const totalLen = buffers.reduce((a, b) => a + b.length, 0);
-  const merged   = new Float32Array(totalLen);
-  let offset = 0;
-  for (const b of buffers) { merged.set(b, offset); offset += b.length; }
-
-  // Int16 변환
-  const int16 = new Int16Array(merged.length);
-  for (let i = 0; i < merged.length; i++) {
-    const s = Math.max(-1, Math.min(1, merged[i]));
-    int16[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
-  }
-
-  // WAV 헤더 구성
-  const dataLen    = int16.byteLength;
-  const buffer     = new ArrayBuffer(44 + dataLen);
-  const view       = new DataView(buffer);
-  const numCh      = 1;
-  const bitsPerSmp = 16;
-  const blockAlign = numCh * bitsPerSmp / 8;
-  const byteRate   = sampleRate * blockAlign;
-
-  const wr = (pos, str) => { for (let i=0;i<str.length;i++) view.setUint8(pos+i, str.charCodeAt(i)); };
-  wr(0,'RIFF'); view.setUint32(4, 36+dataLen, true);
-  wr(8,'WAVE'); wr(12,'fmt ');
-  view.setUint32(16, 16, true);
-  view.setUint16(20, 1, true);          // PCM
-  view.setUint16(22, numCh, true);
-  view.setUint32(24, sampleRate, true);
-  view.setUint32(28, byteRate, true);
-  view.setUint16(32, blockAlign, true);
-  view.setUint16(34, bitsPerSmp, true);
-  wr(36,'data'); view.setUint32(40, dataLen, true);
-  new Int16Array(buffer, 44).set(int16);
-
-  return new Blob([buffer], { type: 'audio/wav' });
-}
-
-// ── TAB1: 음성 인식 ──
-async function startListening() {
+// ── TAB1: 음성 인식 (크롬/엣지 전용) ──
+function startListening() {
   if(!simPhotoSet) return;
-  // 녹음 중이면 먼저 중지 후 정리
-  if(isRecording) { stopRec(); }
-  await cleanupAudio();
-  const SR = window.SpeechRecognition||window.webkitSpeechRecognition;
-  if(!SR){ alert('크롬 브라우저를 사용해 주세요.'); return; }
   hideBubble();
   const btn = document.getElementById('mic-btn');
   btn.className='mic-btn listening'; btn.textContent='🎤 듣고 있어요… "안녕!" 크게!';
   setStatus('잘 듣고 있어요! 크게 "안녕!" 하고 말해봐요 😊','blue');
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   const rec = new SR();
   rec.lang='ko-KR'; rec.interimResults=false; rec.maxAlternatives=3;
   rec.start();
@@ -462,22 +291,17 @@ async function startListening() {
     const ok = texts.some(t=>t.includes('안녕')||t.includes('아녕')||t.includes('하이'));
     if(ok) onSuccess(); else { setStatus('다시 한 번! "안녕!" 하고 말해봐요 🌟','orange'); resetMicBtn(); }
   };
-  rec.onerror = ()=>{ setStatus('다시 눌러서 말해봐요! 🎤','orange'); resetMicBtn(); };
+  rec.onerror = () => {
+    // 음성인식 오류 시 버튼 탭으로 대체
+    onSuccess();
+  };
 }
 function onSuccess() {
   const btn = document.getElementById('mic-btn');
   btn.className='mic-btn success'; btn.textContent='🎉 잘했어요!!';
   setStatus('완벽해요! 친구가 대답하고 있어요! 👏','green');
   showBubble();
-  if(replyMode==='rec' && recAudio) {
-    setTimeout(() => {
-      recAudio.currentTime = 0;
-      const p = recAudio.play();
-      if(p && p.catch) p.catch(() => speakTTS()); // 실패 시 TTS 대체
-    }, 300);
-  } else {
-    speakTTS();
-  }
+  speakTTS();
   setTimeout(resetMicBtn, 4500);
 }
 function resetMicBtn() {
