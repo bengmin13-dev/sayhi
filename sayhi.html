@@ -281,8 +281,9 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);min-height:100vh;displ
 <script>
 // ── 상태 ──
 let simPhotoSet = false;
-let replyMode = 'tts';          // 'tts' | 'rec'
+let replyMode = 'tts';
 let mediaRecorder = null;
+let micStream = null;
 let recordedChunks = [];
 let recordedBlob = null;
 let recordedUrl = null;
@@ -328,44 +329,69 @@ function setMode(m) {
 
 // ── 녹음 ──
 async function startRec() {
+  // 기존 스트림 정리
+  if(micStream) { micStream.getTracks().forEach(t=>t.stop()); micStream=null; }
   try {
-    const stream = await navigator.mediaDevices.getUserMedia({audio:true});
+    micStream = await navigator.mediaDevices.getUserMedia({audio:true});
     recordedChunks = [];
-    mediaRecorder = new MediaRecorder(stream);
-    mediaRecorder.ondataavailable = e => { if(e.data.size>0) recordedChunks.push(e.data); };
+
+    // 기기별 지원 포맷 자동 감지 (iOS: mp4, 안드/PC: webm)
+    const mimeType = ['audio/mp4','audio/webm;codecs=opus','audio/webm','audio/ogg']
+      .find(m => MediaRecorder.isTypeSupported(m)) || '';
+
+    mediaRecorder = new MediaRecorder(micStream, mimeType ? {mimeType} : {});
+    mediaRecorder.ondataavailable = e => { if(e.data && e.data.size>0) recordedChunks.push(e.data); };
     mediaRecorder.onstop = () => {
-      recordedBlob = new Blob(recordedChunks, {type:'audio/webm'});
+      // 스트림 해제 — 음성인식이 마이크 다시 쓸 수 있게
+      if(micStream) { micStream.getTracks().forEach(t=>t.stop()); micStream=null; }
+      const finalType = mimeType || 'audio/webm';
+      recordedBlob = new Blob(recordedChunks, {type: finalType});
       if(recordedUrl) URL.revokeObjectURL(recordedUrl);
       recordedUrl = URL.createObjectURL(recordedBlob);
+      // Audio 객체 새로 생성
       recAudio = new Audio(recordedUrl);
-      document.getElementById('rec-play-btn').disabled = false;
+      recAudio.oncanplaythrough = () => {
+        document.getElementById('rec-play-btn').disabled = false;
+      };
+      recAudio.load();
+      document.getElementById('rec-play-btn').disabled = false; // 바로도 열어둠
       document.getElementById('rec-status').textContent = '✅ 녹음 완료! 미리 듣기로 확인해보세요.';
     };
-    mediaRecorder.start();
+    mediaRecorder.start(100); // 100ms 단위로 데이터 수집
     isRecording = true;
     document.getElementById('rec-status').textContent = '🔴 녹음 중... 친구 대답을 말해주세요!';
     document.getElementById('rec-start-btn').disabled = true;
     document.getElementById('rec-stop-btn').disabled  = false;
   } catch(err) {
-    document.getElementById('rec-status').textContent = '❌ 마이크 권한이 필요해요.';
+    console.error('녹음 오류:', err);
+    document.getElementById('rec-status').textContent = '❌ 마이크 권한이 필요해요. (설정에서 허용해주세요)';
   }
 }
 function stopRec() {
   if(mediaRecorder && isRecording) {
-    mediaRecorder.stop();
-    mediaRecorder.stream.getTracks().forEach(t=>t.stop());
+    mediaRecorder.stop(); // onstop에서 스트림 해제
     isRecording = false;
     document.getElementById('rec-start-btn').disabled = false;
     document.getElementById('rec-stop-btn').disabled  = true;
   }
 }
 function playRec() {
-  if(recAudio) { recAudio.currentTime=0; recAudio.play(); }
+  if(!recAudio) { document.getElementById('rec-status').textContent='❌ 먼저 녹음해주세요!'; return; }
+  recAudio.currentTime = 0;
+  const p = recAudio.play();
+  if(p && p.catch) p.catch(e => {
+    console.error('재생 오류:', e);
+    document.getElementById('rec-status').textContent = '❌ 재생 실패. 다시 녹음해보세요.';
+  });
 }
 
 // ── TAB1: 음성 인식 ──
 function startListening() {
   if(!simPhotoSet) return;
+  // 녹음 중이면 먼저 중지
+  if(isRecording) { stopRec(); }
+  // 마이크 스트림 점유 중이면 해제
+  if(micStream) { micStream.getTracks().forEach(t=>t.stop()); micStream=null; }
   const SR = window.SpeechRecognition||window.webkitSpeechRecognition;
   if(!SR){ alert('크롬 브라우저를 사용해 주세요.'); return; }
   hideBubble();
@@ -387,9 +413,13 @@ function onSuccess() {
   btn.className='mic-btn success'; btn.textContent='🎉 잘했어요!!';
   setStatus('완벽해요! 친구가 대답하고 있어요! 👏','green');
   showBubble();
-  // 대답 재생
   if(replyMode==='rec' && recAudio) {
-    recAudio.currentTime=0; recAudio.play();
+    // 짧은 딜레이 후 재생 (음성인식 종료 후 안정화)
+    setTimeout(() => {
+      recAudio.currentTime = 0;
+      const p = recAudio.play();
+      if(p && p.catch) p.catch(e => { console.warn('녹음 재생 실패, TTS로 대체'); speakTTS(); });
+    }, 200);
   } else {
     speakTTS();
   }
